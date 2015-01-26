@@ -18,16 +18,7 @@ ALCcontext *context;
 ALCdevice *device;
 lot_t *handles;
 bool initialized = false;
-bool error_occurred = false;
 
-int errornum;
-
-#define SetError(error) { \
-	error_occurred = true; \
-	errornum = error; \
-	return -1; }
-#define InitializedTest() \
-	if (!initialized) SetError(CASTER_ERROR_NOT_INITIALIZED)
 
 // source_id = input >> SOURCE_OFFSET,
 // sample_id = input & SAMPLE_MASK
@@ -35,22 +26,16 @@ int errornum;
 #define SOURCE_OFFSET 24			
 #define SAMPLE_MASK 0x00FFFFFF		
 
-static bool GetSample(double input, sample **s, unsigned int *inst)
-{
-	if (!initialized)
-	{
-		error_occurred = true;
-		errornum = CASTER_ERROR_NOT_INITIALIZED;
-		return false;
-	}
+#define GET_SAMPLE(handle,s,inst) \
+	int __err; \
+	if ((__err = GetSample(handle, s, inst))) \
+		return __err;
 
+static int GetSample(double input, sample **s, unsigned int *inst)
+{
 	unsigned int in = (unsigned int)input;
 	if (input != in)
-	{
-		error_occurred = true;
-		errornum = CASTER_ERROR_INVALID_HANDLE;
-		return false;
-	}
+		return CASTER_INVALID_HANDLE;
 
 	if (inst != 0)
 		*inst = in >> SOURCE_OFFSET;
@@ -58,13 +43,9 @@ static bool GetSample(double input, sample **s, unsigned int *inst)
 	*s = (sample *)lot_place(handles, in & SAMPLE_MASK); 
 
 	if (s == 0)
-	{
-		error_occurred = true;
-		errornum = CASTER_ERROR_HANDLE_NOT_FOUND;
-		return false;
-	}
+		return CASTER_HANDLE_NOT_FOUND;
 
-	return true;
+	return 0;
 }
 
 // is_ogg and is_wav should be extended to actually check the header
@@ -107,45 +88,42 @@ extern "C"
 
 	double caster_initialize()
 	{
-		handles = lot_create();
 		float orientation[] = { 0, 1, 0, 0, 0, 1 };
+		handles = lot_create();
 		if (handles == 0)
-			goto error;
+			return CASTER_OUT_OF_MEMORY;
 
 		device = alcOpenDevice(0);
 		if (device == 0)
-			goto error;
+		{
+			lot_destroy(handles);
+			return CASTER_AL_ERROR;
+		}
 
 		context = alcCreateContext(device, 0);
 		if (context == 0)
-			goto error;
+		{
+			alcCloseDevice(device);
+			lot_destroy(handles);
+			return CASTER_AL_ERROR;
+		}
 
 		alcMakeContextCurrent(context);
 		alListener3f(AL_POSITION, 0.0f, 0.0f, 0.0f);
 		alListenerfv(AL_ORIENTATION, orientation);
 
-		initialized = true;
-		error_occurred = false;
-		errornum = CASTER_ERROR_NOERROR;
-		return 1;
+		ALenum err = alGetError();
+		if (err != AL_NO_ERROR)
+			return err;
 
-error:
-		if (handles != 0)
-			lot_destroy(handles);
-		if (device != 0)
-			alcCloseDevice(device);
-		if (context != 0)
-			alcDestroyContext(context);
-		
-		error_occurred = true;
-		errornum = CASTER_ERROR_INITIALIZATION;
-		return -1;
+		initialized = true;
+		return 0;
 	}
 
 	double caster_deinitialize()
 	{
 		if (!initialized)
-			SetError(CASTER_ERROR_NOT_INITIALIZED);
+			return CASTER_NOT_INITIALIZED;
 		lot_iterator_t *iter = lot_iterator_create(handles);
 		sample *current;
 
@@ -156,23 +134,21 @@ error:
 		alcDestroyContext(context);
 		alcCloseDevice(device);
 
-		if (alGetError() != AL_NO_ERROR)
-			SetError(CASTER_ERROR_DEINITIALIZATION);
-
-		return 1;
+		return alGetError();
 	}
 
 	double caster_load(char *file)
 	{
-		InitializedTest();
+		if (!initialized) return CASTER_NOT_INITIALIZED;
+
 		double result;
 		sample *s = new sample();
 		if (s == 0)
-			SetError(CASTER_ERROR_OUT_OF_MEMORY);
+			return CASTER_OUT_OF_MEMORY;
 
 		FILE *f;
 		if (fopen_s(&f, file, "r") != 0)
-			SetError(CASTER_ERROR_FILE_NOT_FOUND)
+			return CASTER_FILE_NOT_FOUND;
 		else
 			fclose(f);
 
@@ -181,21 +157,19 @@ error:
 		else if (is_wav(file))
 			result = s->load_wav(file);
 		else
-			SetError(CASTER_ERROR_INVALID_FILE);
+			return CASTER_INVALID_FILE;
 
 		if (result < 0)
 		{
 			delete s;
 			if (result == -1)
-				errornum = CASTER_ERROR_UNSPECIFIED; // file not found; this should have been handled above
+				return CASTER_UNSPECIFIED; // file not found; this should have been handled above
 			else if (result == -2)
-				errornum = CASTER_ERROR_INVALID_FILE;
+				return CASTER_INVALID_FILE;
 			else if (result == -3 || result == -4)
-				errornum = CASTER_ERROR_OUT_OF_MEMORY;
+				return CASTER_OUT_OF_MEMORY;
 			else
-				errornum = CASTER_ERROR_UNSPECIFIED;
-			error_occurred = true;
-			return -1;
+				return CASTER_UNSPECIFIED;
 		}
 
 		return lot_add(handles, s);
@@ -203,10 +177,9 @@ error:
 
 	double caster_free(double handle)
 	{
-		InitializedTest();
-
+		if (!initialized) return CASTER_NOT_INITIALIZED;
 		if (handle == GM_NOONE)
-			return 1;
+			return 0;
 
 		if (handle == GM_ALL)
 		{
@@ -220,38 +193,33 @@ error:
 			handles = lot_create();
 
 			lot_iterator_destroy(iter);
-			return 1;
+			return 0;
 		}
 
 		sample *s;
-		if (!GetSample(handle, &s, 0))
-			return -1;
-
+		GET_SAMPLE(handle, &s, 0);
+		
 		lot_remove(handles, s);
 		s->free();
 		delete s;
 
-		if (alGetError() != AL_NO_ERROR)
-			SetError(CASTER_ERROR_UNSPECIFIED);
-
-		return 1;
+		return alGetError();
 	}
 
 	double caster_play(double handle, double volume, double pitch)
 	{
-		InitializedTest();
+		if (!initialized) return CASTER_NOT_INITIALIZED;
 		if (handle == GM_NOONE)
-			return 1;
+			return 0;
 		
 		sample *s;
-		if (!GetSample(handle, &s, 0))
-			return -1;
+		GET_SAMPLE(handle, &s, 0);
 
 		int result = s->play(false, (float)volume, (float)pitch) + 1;
 		if (result == -1)
-			SetError(CASTER_ERROR_UNSPECIFIED)
+			return CASTER_UNSPECIFIED;
 		else if (result == -2)
-			SetError(CASTER_ERROR_INSTANCE_OVERFLOW)
+			return CASTER_INSTANCE_OVERFLOW;
 		else
 			return (((unsigned int)result) << SOURCE_OFFSET)
 				   | (unsigned int)handle;
@@ -259,19 +227,18 @@ error:
 
 	double caster_loop(double handle, double volume, double pitch)
 	{
-		InitializedTest();
+		if (!initialized) return CASTER_NOT_INITIALIZED;
 		if (handle == GM_NOONE)
-			return 1;
+			return 0;
 
 		sample *s;
-		if (!GetSample(handle, &s, 0))
-			return -1;
+		GET_SAMPLE(handle, &s, 0);
 
 		int result = s->play(true, (float)volume, (float)pitch) + 1;
 		if (result == -1)
-			SetError(CASTER_ERROR_UNSPECIFIED)
+			return CASTER_UNSPECIFIED;
 		else if (result == -2)
-			SetError(CASTER_ERROR_INSTANCE_OVERFLOW)
+			return CASTER_INSTANCE_OVERFLOW;
 		else
 			return (((unsigned int)result) << SOURCE_OFFSET)
 				   | (unsigned int)handle;
@@ -279,9 +246,9 @@ error:
 
 	double caster_stop(double handle)
 	{
-		InitializedTest();
+		if (!initialized) return CASTER_NOT_INITIALIZED;
 		if (handle == GM_NOONE)
-			return 1;
+			return 0;
 
 		if (handle == GM_ALL)
 		{
@@ -292,33 +259,32 @@ error:
 				s->stop_all();
 
 			lot_iterator_destroy(iter);
-			return 1;
+			return 0;
 		}
 
 		sample *s;
 		unsigned int inst;
-		if (!GetSample(handle, &s, &inst))
-			return -1;
+		GET_SAMPLE(handle, &s, &inst);
 
 		if (inst == 0)
 		{
 			if (s->stop_all() < 0)
-				SetError(CASTER_ERROR_UNSPECIFIED)
+				return CASTER_UNSPECIFIED;
 		}
 		else
 		{
 			if (s->stop(inst - 1) < 0)
-				SetError(CASTER_ERROR_UNSPECIFIED)
+				return CASTER_UNSPECIFIED;
 		}
 
-		return 1;
+		return alGetError();
 	}
 
 	double caster_pause(double handle)
 	{
-		InitializedTest();
+		if (!initialized) return CASTER_NOT_INITIALIZED;
 		if (handle == GM_NOONE)
-			return 1;
+			return 0;
 
 		if (handle == GM_ALL)
 		{
@@ -329,33 +295,32 @@ error:
 				s->pause_all();
 
 			lot_iterator_destroy(iter);
-			return 1;
+			return 0;
 		}
 
 		sample *s;
 		unsigned int inst;
-		if (!GetSample(handle, &s, &inst))
-			return -1;
+		GET_SAMPLE(handle, &s, &inst);
 
 		if (inst == 0)
 		{
 			if (s->pause_all() < 0)
-				SetError(CASTER_ERROR_UNSPECIFIED)
+				return CASTER_UNSPECIFIED;
 		}
 		else
 		{
 			if (s->pause(inst - 1) < 0)
-				SetError(CASTER_ERROR_UNSPECIFIED)
+				return CASTER_UNSPECIFIED;
 		}
 		
-		return 1;
+		return alGetError();
 	}
 
 	double caster_resume(double handle)
 	{
-		InitializedTest();
+		if (!initialized) return CASTER_NOT_INITIALIZED;
 		if (handle == GM_NOONE)
-			return 1;
+			return 0;
 
 		if (handle == GM_ALL)
 		{
@@ -366,31 +331,30 @@ error:
 				s->resume_all();
 
 			lot_iterator_destroy(iter);
-			return 1;
+			return 0;
 		}
 
 		sample *s;
 		unsigned int inst;
-		if (!GetSample(handle, &s, &inst))
-			return -1;
+		GET_SAMPLE(handle, &s, &inst);
 
 		if (inst == 0)
 		{
 			if (s->resume_all() < 0)
-				SetError(CASTER_ERROR_UNSPECIFIED);
+				return CASTER_UNSPECIFIED;
 		}
 		else
 		{
 			if (s->resume(inst - 1) < 0)
-				SetError(CASTER_ERROR_UNSPECIFIED);
+				return CASTER_UNSPECIFIED;
 		}
 
-		return 1;
+		return alGetError();
 	}
 
 	double caster_is_playing(double handle)
 	{
-		InitializedTest();
+		if (!initialized) return CASTER_NOT_INITIALIZED;
 		if (handle == GM_NOONE)
 			return 0;
 
@@ -412,8 +376,7 @@ error:
 
 		sample *s;
 		unsigned int inst;
-		if (!GetSample(handle, &s, &inst))
-			return -1;
+		GET_SAMPLE(handle, &s, &inst);
 
 		if (inst == 0)
 			return s->is_playing();
@@ -423,46 +386,43 @@ error:
 
 	double caster_get_volume(double instance)
 	{
-		InitializedTest();
+		if (!initialized) return CASTER_NOT_INITIALIZED;
 
 		sample *s;
 		unsigned int inst;
-		if (!GetSample(instance, &s, &inst))
-			return -1;
+		GET_SAMPLE(instance, &s, &inst);
 		
 		return s->get_volume(inst == 0 ? 0 : inst - 1);
 	}
 	
 	double caster_get_pitch(double instance)
 	{
-		InitializedTest();
+		if (!initialized) return CASTER_NOT_INITIALIZED;
 
 		sample *s;
 		unsigned int inst;
-		if (!GetSample(instance, &s, &inst))
-			return -1;
+		GET_SAMPLE(instance, &s, &inst);
 		
 		return s->get_pitch(inst == 0 ? 0 : inst - 1);
 	}
 
 	double caster_get_panning(double instance)
 	{
-		InitializedTest();
+		if (!initialized) return CASTER_NOT_INITIALIZED;
 
 		sample *s;
 		unsigned int inst;
-		if (!GetSample(instance, &s, &inst))
-			return -1;
+		GET_SAMPLE(instance, &s, &inst);
 
 		return s->get_panning(inst == 0 ? 0 : inst - 1);
 	}
 
 	double caster_set_volume(double instance, double volume)
 	{
-		InitializedTest();
+		if (!initialized) return CASTER_NOT_INITIALIZED;
 
 		if (instance == GM_NOONE)
-			return 1;
+			return 0;
 
 		if (instance == GM_ALL)
 		{
@@ -478,25 +438,21 @@ error:
 
 		sample *s;
 		unsigned int inst;
-		if (!GetSample(instance, &s, &inst))
-			return -1;
-
-		if (volume < 0)
-			SetError(CASTER_ERROR_ARGUMENT_OUT_OF_BOUNDS);
+		GET_SAMPLE(instance, &s, &inst);
 
 		if (inst == 0)
 			s->set_volume((float)volume);
 		else
 			s->set_volume(inst - 1, (float)volume);
-		return 1;
+		return 0;
 	}
 	
 	double caster_set_pitch(double instance, double pitch)
 	{
-		InitializedTest();
+		if (!initialized) return CASTER_NOT_INITIALIZED;
 
 		if (instance == GM_NOONE)
-			return 1;
+			return 0;
 
 		if (instance == GM_ALL)
 		{
@@ -512,22 +468,18 @@ error:
 
 		sample *s;
 		unsigned int inst;
-		if (!GetSample(instance, &s, &inst))
-			return -1;
-
-		if (pitch <= 0)
-			SetError(CASTER_ERROR_ARGUMENT_OUT_OF_BOUNDS);
+		GET_SAMPLE(instance, &s, &inst);
 
 		if (inst == 0)
 			s->set_pitch((float)pitch);
 		else
 			s->set_pitch(inst - 1, (float)pitch);
-		return 1;
+		return 0;
 	}
 
 	double caster_set_panning(double instance, double panning)
 	{
-		InitializedTest();
+		if (!initialized) return CASTER_NOT_INITIALIZED;
 
 		if (instance == GM_NOONE)
 			return 1;
@@ -546,75 +498,13 @@ error:
 
 		sample *s;
 		unsigned int inst;
-		if (!GetSample(instance, &s, &inst))
-			return -1;
-
-		if (panning < -1 || panning > 1)
-			SetError(CASTER_ERROR_ARGUMENT_OUT_OF_BOUNDS);
+		GET_SAMPLE(instance, &s, &inst);
 
 		if (inst == 0)
 			s->set_panning((float)panning);
 		else
 			s->set_panning(inst - 1, (float)panning);
 		return 1;
-	}
-
-	double caster_error_occurred()
-	{
-		InitializedTest();
-
-		bool result = error_occurred;
-		error_occurred = false;
-		return result;
-	}
-
-	char *caster_error_message()
-	{
-		if (!initialized)
-			return "Library is not initialized"; 
-
-		switch (errornum)
-		{
-		case CASTER_ERROR_NOERROR:
-			return "No error";
-
-		case CASTER_ERROR_INITIALIZATION:
-			return "Error in initialization";
-
-		case CASTER_ERROR_DEINITIALIZATION:
-			return "Unexpected error while deinitializing";
-
-		case CASTER_ERROR_FILE_NOT_FOUND:
-			return "File not found";
-
-		case CASTER_ERROR_INVALID_FILE:
-			return "Invalid file";
-
-		case CASTER_ERROR_NOT_INITIALIZED:
-			return "Library is not initialized";
-
-		case CASTER_ERROR_HANDLE_NOT_FOUND:
-			return "Handle not found";
-
-		case CASTER_ERROR_INSTANCE_NOT_FOUND:
-			return "Instance not found";
-
-		case CASTER_ERROR_OUT_OF_MEMORY:
-			return "Out of memory";
-
-		case CASTER_ERROR_ARGUMENT_OUT_OF_BOUNDS:
-			return "Argument is out of bounds";
-
-		case CASTER_ERROR_INVALID_HANDLE:
-			return "Invalid handle index";
-
-		case CASTER_ERROR_INSTANCE_OVERFLOW:
-			return "Too many sound instances; no more than 256 instances can be played simultaneously";
-
-		case CASTER_ERROR_UNSPECIFIED:
-		default:
-			return "Internal error";
-		}
 	}
 
 #ifdef __cplusplus

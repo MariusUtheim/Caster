@@ -18,19 +18,19 @@
 #define GM_NOONE -4
 #define GM_ALL -3
 
-#define CASTER_ERROR_NOERROR -1
-#define CASTER_ERROR_INITIALIZATION 1
-#define CASTER_ERROR_FILE_NOT_FOUND 2
-#define CASTER_ERROR_INVALID_FILE 3
-#define CASTER_ERROR_NOT_INITIALIZED 4
-#define CASTER_ERROR_HANDLE_NOT_FOUND 5
-#define CASTER_ERROR_INSTANCE_NOT_FOUND 6
-#define CASTER_ERROR_OUT_OF_MEMORY 7
-#define CASTER_ERROR_ARGUMENT_OUT_OF_BOUNDS 8
-#define CASTER_ERROR_DEINITIALIZATION 9
-#define CASTER_ERROR_INVALID_HANDLE 10
-#define CASTER_ERROR_INSTANCE_OVERFLOW 11
-#define CASTER_ERROR_UNSPECIFIED 999
+#define CASTER_NOERROR 1
+#define CASTER_INITIALIZATION -1
+#define CASTER_FILE_NOT_FOUND -2
+#define CASTER_INVALID_FILE -3
+#define CASTER_NOT_INITIALIZED -4
+#define CASTER_HANDLE_NOT_FOUND -5
+#define CASTER_INSTANCE_NOT_FOUND -6
+#define CASTER_OUT_OF_MEMORY -7
+#define CASTER_ARGUMENT_OUT_OF_BOUNDS -8
+#define CASTER_INVALID_HANDLE -10
+#define CASTER_INSTANCE_OVERFLOW -11
+#define CASTER_AL_ERROR -12
+#define CASTER_UNSPECIFIED -999
 
 #ifdef __cplusplus
 extern "C"
@@ -53,8 +53,6 @@ extern "C"
 	EXPORT double caster_set_pitch(double handle, double pitch);
 	EXPORT double caster_get_panning(double handle);
 	EXPORT double caster_set_panning(double handle, double panning);
-	EXPORT double caster_error_occurred();
-	EXPORT char  *caster_error_message();
 #ifdef __cplusplus
 }
 #endif
