@@ -26,10 +26,10 @@ bool initialized = false;
 #define SOURCE_OFFSET 24			
 #define SAMPLE_MASK 0x00FFFFFF		
 
-#define GET_SAMPLE(handle,s,inst) \
+#define GET_SAMPLE(handle,s,inst) { \
 	int __err; \
 	if ((__err = GetSample(handle, s, inst))) \
-		return __err;
+		return __err; }
 
 static int GetSample(double input, sample **s, unsigned int *inst)
 {
@@ -78,9 +78,9 @@ extern "C"
 	char *caster_version()
 	{
 #if defined(_WIN32) || defined(_WIN64)
-		return "Windows 1.1b";
+		return "Windows 1.2.01";
 #elif defined(__APPLE__)
-		return "Mac 1.1b";
+		return "Mac 1.2.01";
 #else
 #error Unsupported platform
 #endif

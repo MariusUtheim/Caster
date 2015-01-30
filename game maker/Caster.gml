@@ -13,6 +13,8 @@ begin
         show_error("An OpenAL error occurred while initializing Caster.", true);
     else if (result > 0)
         show_error("An OpenAL error occurred while initializing Caster (error code: " + string(result) + ").", true);
+    else if (result != 0)
+        show_error("An unspecified error occurred while initializing Caster.", true);
 end
 
 #define __caster_deinitialize
@@ -52,7 +54,7 @@ begin
     var result;
     result = _caster_load(argument0);
     if (result == CASTER_NOT_INITIALIZED)
-        show_error("Caster is not initialized.");
+        show_error("Caster is not initialized.", true);
     else if (result == CASTER_OUT_OF_MEMORY)
         show_error("Out of memory", true);
     else if (result == CASTER_FILE_NOT_FOUND)
@@ -116,9 +118,7 @@ begin
         show_error("Too many simulatneous instances.", false);
     else if (result == CASTER_UNSPECIFIED)
         show_error("An unspecified error occurred in Caster.", false);
-    else if (result > 0)
-        show_error("OpenAl caused an error (error code: " + string(result) + ").", false);
-    
+
     return result;
 end
 
@@ -152,9 +152,7 @@ begin
         show_error("Too many simulatneous instances.", false);
     else if (result == CASTER_UNSPECIFIED)
         show_error("An unspecified error occurred in Caster.", false);
-    else if (result > 0)
-        show_error("OpenAl caused an error (error code: " + string(result) + ").", false);
-    
+
     return result;
 end
 
@@ -298,7 +296,7 @@ end
 
 begin
     var result;
-    result = _caster_get_volume(argument0);
+    result = _caster_get_panning(argument0);
     
     if (result == CASTER_NOT_INITIALIZED)
         show_error("Caster is not initialized.", true);
