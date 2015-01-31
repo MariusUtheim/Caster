@@ -24,7 +24,7 @@
     <ClInclude Include="..\..\src\lot.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\sample.h">
+    <ClInclude Include="..\..\src\Sample.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -35,10 +35,10 @@
     <ClCompile Include="..\..\src\lot.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\sample.cpp">
+    <ClCompile Include="..\..\src\wavefile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\wavefile.cpp">
+    <ClCompile Include="..\..\src\Sample.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

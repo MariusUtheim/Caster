@@ -75,13 +75,13 @@
   <ItemGroup>
     <ClInclude Include="..\..\src\caster.h" />
     <ClInclude Include="..\..\src\lot.h" />
-    <ClInclude Include="..\..\src\sample.h" />
+    <ClInclude Include="..\..\src\Sample.h" />
     <ClInclude Include="..\..\src\wavefile.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\caster.cpp" />
     <ClCompile Include="..\..\src\lot.cpp" />
-    <ClCompile Include="..\..\src\sample.cpp" />
+    <ClCompile Include="..\..\src\Sample.cpp" />
     <ClCompile Include="..\..\src\wavefile.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -1,5 +1,5 @@
 /*
- * sample.cpp
+ * Sample.cpp
  * 
  * Created by Marius Utheim on 27.05.2011
  * All rights reserved
@@ -13,33 +13,33 @@
 #include <vorbis/vorbisenc.h>
 #include <vorbis/vorbisfile.h>
 #include <ogg/ogg.h>
-#include "sample.h"
+#include "Sample.h"
 #include "wavefile.h"
 #include "lot.h"
 using std::ifstream;
 
 #define WORD_SIZE 2
 
-sample::sample()
+Sample::Sample()
 {
 	alGenBuffers(1, &buffer);
 	sourcecount = 0;
 	sources = 0;
 }
 
-sample::~sample()
+Sample::~Sample()
 {
 	free();
 }
 
-int sample::free()
+int Sample::free()
 {
 	alDeleteSources(sourcecount, sources);
 	alDeleteBuffers(1, &buffer);
 	return 1;
 }
 
-int sample::load_ogg(char *path)
+int Sample::load_ogg(char *path)
 {
 	OggVorbis_File oggFile;
 	int size;
@@ -98,7 +98,7 @@ int sample::load_ogg(char *path)
 	return 1;
 }
 
-int sample::load_wav(char *path)
+int Sample::load_wav(char *path)
 {
 	wavefile *f = wavefile_open(path);
 	if (f == 0)
@@ -126,7 +126,7 @@ int sample::load_wav(char *path)
 	return check();
 }
 
-int sample::play(bool looping, float volume, float pitch)
+int Sample::play(bool looping, float volume, float pitch)
 {
 	unsigned int i;
 	for (i = 0; i < sourcecount; i++)
@@ -172,7 +172,7 @@ startplaying:
 		return i;
 }
 
-int sample::stop(unsigned int instance)
+int Sample::stop(unsigned int instance)
 {
 	if (is_playing(instance))
 	{
@@ -183,7 +183,7 @@ int sample::stop(unsigned int instance)
 		return -2;
 }
 
-int sample::stop_all()
+int Sample::stop_all()
 {
 	for (unsigned int i = 0; i < sourcecount; i++)
 		if (is_playing(i))
@@ -192,7 +192,7 @@ int sample::stop_all()
 	return check();
 }
 
-int sample::pause(unsigned int instance)
+int Sample::pause(unsigned int instance)
 {
 	if (instance < sourcecount)
 	{
@@ -203,7 +203,7 @@ int sample::pause(unsigned int instance)
 		return -2;
 }
 
-int sample::pause_all()
+int Sample::pause_all()
 {
 	for (unsigned int i = 0; i < sourcecount; i++)
 		alSourcePause(sources[i]);
@@ -211,7 +211,7 @@ int sample::pause_all()
 	return check();
 }
 
-int sample::resume(unsigned int instance)
+int Sample::resume(unsigned int instance)
 {
 	if (instance < sourcecount)
 	{
@@ -225,7 +225,7 @@ int sample::resume(unsigned int instance)
 		return -2;
 }
 
-int sample::resume_all()
+int Sample::resume_all()
 {
 	ALint state;
 	for (unsigned int i = 0; i < sourcecount; i++)
@@ -238,12 +238,12 @@ int sample::resume_all()
 	return check();
 }
 
-int sample::check()
+int Sample::check()
 {
 	return (alGetError() == AL_NO_ERROR) ? 1 : -1;
 }
 
-int sample::is_playing()
+int Sample::is_playing()
 {
 	for (unsigned int i = 0; i < sourcecount; i++)
 		if (is_playing(i))
@@ -252,7 +252,7 @@ int sample::is_playing()
 	return 0;
 }
 
-int sample::is_playing(unsigned int instance)
+int Sample::is_playing(unsigned int instance)
 {
 	if (instance < sourcecount)
 	{
@@ -264,7 +264,7 @@ int sample::is_playing(unsigned int instance)
 		return 0;
 }
 
-void sample::set_looping(unsigned int instance, bool looping)
+void Sample::set_looping(unsigned int instance, bool looping)
 {
 	if (instance == 0)
 		for (unsigned int i = 0; i < sourcecount; i++)
@@ -273,31 +273,31 @@ void sample::set_looping(unsigned int instance, bool looping)
 		alSourcei(sources[instance], AL_LOOPING, looping);
 }
 
-void sample::set_pitch(float pitch)
+void Sample::set_pitch(float pitch)
 {
 	for (unsigned int i = 0; i < sourcecount; i++)
 		set_pitch(i, pitch);
 }
 
-void sample::set_pitch(unsigned int instance, float pitch)
+void Sample::set_pitch(unsigned int instance, float pitch)
 {
 	if (is_playing(instance))
 		alSourcef(sources[instance], AL_PITCH, pitch);
 }
 
-void sample::set_volume(float volume)
+void Sample::set_volume(float volume)
 {
 	for (unsigned int i = 0; i < sourcecount; i++)
 		set_volume(i, volume);
 }
 
-void sample::set_volume(unsigned int instance, float volume)
+void Sample::set_volume(unsigned int instance, float volume)
 {
 	if (is_playing(instance))
 		alSourcef(sources[instance], AL_GAIN, volume);
 }
 
-bool sample::get_looping(unsigned int instance)
+bool Sample::get_looping(unsigned int instance)
 {
 	if (!is_playing(instance))
 		return false;
@@ -306,7 +306,7 @@ bool sample::get_looping(unsigned int instance)
 	return (looping == 1);
 }
 
-float sample::get_volume(unsigned int instance)
+float Sample::get_volume(unsigned int instance)
 {
 	if (!is_playing(instance))
 		return 0;
@@ -315,7 +315,7 @@ float sample::get_volume(unsigned int instance)
 	return volume;
 }
 
-float sample::get_pitch(unsigned int instance)
+float Sample::get_pitch(unsigned int instance)
 {
 	if (!is_playing(instance))
 		return 0;
@@ -324,19 +324,19 @@ float sample::get_pitch(unsigned int instance)
 	return pitch;
 }
 
-void sample::set_panning(float panning)
+void Sample::set_panning(float panning)
 {
 	for (unsigned int i = 0; i < sourcecount; i++)
 		set_panning(i, panning);
 }
 
-void sample::set_panning(unsigned int instance, float panning)
+void Sample::set_panning(unsigned int instance, float panning)
 {
 	if (is_playing(instance))
 		alSource3f(sources[instance], AL_POSITION, sinf((float)M_PI_2 * panning), cosf((float)M_PI_2 * panning), 0.0f);
 }
 
-float sample::get_panning(unsigned int instance)
+float Sample::get_panning(unsigned int instance)
 {
 	if (!is_playing(instance))
 		return 0;

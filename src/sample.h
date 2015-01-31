@@ -19,7 +19,7 @@
 #include "lot.h"
 
 
-class sample
+class Sample
 {
 private:
 	ALuint buffer;
@@ -29,8 +29,8 @@ private:
 	int check();
 
 public:
-	sample();
-	~sample();
+	Sample();
+	~Sample();
 	int load_ogg(char *path);
 	int load_wav(char *path);
 	int free();
@@ -44,7 +44,7 @@ public:
 
 	int is_playing();
 	int is_playing(unsigned int instance);
-	int seek(double time);
+	int seek(unsigned int instance, double time);
 
 	void set_looping(unsigned int instance, bool loop);
 	bool get_looping(unsigned int instance);

@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "caster.h"
-#include "sample.h"
+#include "Sample.h"
 #include "lot.h"
 
 ALCcontext *context;
@@ -20,9 +20,6 @@ lot_t *handles;
 bool initialized = false;
 
 
-// source_id = input >> SOURCE_OFFSET,
-// sample_id = input & SAMPLE_MASK
-// output = sample_id | (source_id << SOURCE_OFFSET)
 #define SOURCE_OFFSET 24			
 #define SAMPLE_MASK 0x00FFFFFF		
 
@@ -31,7 +28,7 @@ bool initialized = false;
 	if ((__err = GetSample(handle, s, inst))) \
 		return __err; }
 
-static int GetSample(double input, sample **s, unsigned int *inst)
+static int GetSample(double input, Sample **s, unsigned int *inst)
 {
 	unsigned int in = (unsigned int)input;
 	if (input != in)
@@ -40,7 +37,7 @@ static int GetSample(double input, sample **s, unsigned int *inst)
 	if (inst != 0)
 		*inst = in >> SOURCE_OFFSET;
 
-	*s = (sample *)lot_place(handles, in & SAMPLE_MASK); 
+	*s = (Sample *)lot_place(handles, in & SAMPLE_MASK); 
 
 	if (s == 0)
 		return CASTER_HANDLE_NOT_FOUND;
@@ -125,9 +122,9 @@ extern "C"
 		if (!initialized)
 			return CASTER_NOT_INITIALIZED;
 		lot_iterator_t *iter = lot_iterator_create(handles);
-		sample *current;
+		Sample *current;
 
-		while ((current = reinterpret_cast<sample *>(lot_next(iter, 0))) != 0)
+		while ((current = reinterpret_cast<Sample *>(lot_next(iter, 0))) != 0)
 			delete current;
 
 		lot_destroy(handles);
@@ -142,7 +139,7 @@ extern "C"
 		if (!initialized) return CASTER_NOT_INITIALIZED;
 
 		double result;
-		sample *s = new sample();
+		Sample *s = new Sample();
 		if (s == 0)
 			return CASTER_OUT_OF_MEMORY;
 
@@ -172,6 +169,8 @@ extern "C"
 				return CASTER_UNSPECIFIED;
 		}
 
+
+
 		return lot_add(handles, s);
 	}
 
@@ -184,9 +183,9 @@ extern "C"
 		if (handle == GM_ALL)
 		{
 			lot_iterator_t *iter = lot_iterator_create(handles);
-			sample *s;
+			Sample *s;
 
-			while ((s = (sample *)lot_next(iter, 0)) != 0)
+			while ((s = (Sample *)lot_next(iter, 0)) != 0)
 				s->free();
 
 			lot_destroy(handles);
@@ -196,7 +195,7 @@ extern "C"
 			return 0;
 		}
 
-		sample *s;
+		Sample *s;
 		GET_SAMPLE(handle, &s, 0);
 		
 		lot_remove(handles, s);
@@ -212,7 +211,7 @@ extern "C"
 		if (handle == GM_NOONE)
 			return 0;
 		
-		sample *s;
+		Sample *s;
 		GET_SAMPLE(handle, &s, 0);
 
 		int result = s->play(false, (float)volume, (float)pitch) + 1;
@@ -231,7 +230,7 @@ extern "C"
 		if (handle == GM_NOONE)
 			return 0;
 
-		sample *s;
+		Sample *s;
 		GET_SAMPLE(handle, &s, 0);
 
 		int result = s->play(true, (float)volume, (float)pitch) + 1;
@@ -253,16 +252,16 @@ extern "C"
 		if (handle == GM_ALL)
 		{
 			lot_iterator_t *iter = lot_iterator_create(handles);
-			sample *s;
+			Sample *s;
 
-			while ((s = (sample *)lot_next(iter, 0)) != 0)
+			while ((s = (Sample *)lot_next(iter, 0)) != 0)
 				s->stop_all();
 
 			lot_iterator_destroy(iter);
 			return 0;
 		}
 
-		sample *s;
+		Sample *s;
 		unsigned int inst;
 		GET_SAMPLE(handle, &s, &inst);
 
@@ -289,16 +288,16 @@ extern "C"
 		if (handle == GM_ALL)
 		{
 			lot_iterator_t *iter = lot_iterator_create(handles);
-			sample *s;
+			Sample *s;
 
-			while ((s = (sample *)lot_next(iter, 0)) != 0)
+			while ((s = (Sample *)lot_next(iter, 0)) != 0)
 				s->pause_all();
 
 			lot_iterator_destroy(iter);
 			return 0;
 		}
 
-		sample *s;
+		Sample *s;
 		unsigned int inst;
 		GET_SAMPLE(handle, &s, &inst);
 
@@ -325,16 +324,16 @@ extern "C"
 		if (handle == GM_ALL)
 		{
 			lot_iterator_t *iter = lot_iterator_create(handles);
-			sample *s;
+			Sample *s;
 
-			while ((s = (sample *)lot_next(iter, 0)) != 0)
+			while ((s = (Sample *)lot_next(iter, 0)) != 0)
 				s->resume_all();
 
 			lot_iterator_destroy(iter);
 			return 0;
 		}
 
-		sample *s;
+		Sample *s;
 		unsigned int inst;
 		GET_SAMPLE(handle, &s, &inst);
 
@@ -361,9 +360,9 @@ extern "C"
 		if (handle == GM_ALL)
 		{
 			lot_iterator_t *iter = lot_iterator_create(handles);
-			sample *s;
+			Sample *s;
 
-			while ((s = (sample *)lot_next(iter, 0)) != 0)
+			while ((s = (Sample *)lot_next(iter, 0)) != 0)
 				if (s->is_playing())
 				{
 					lot_iterator_destroy(iter);
@@ -374,7 +373,7 @@ extern "C"
 			return 0;
 		}
 
-		sample *s;
+		Sample *s;
 		unsigned int inst;
 		GET_SAMPLE(handle, &s, &inst);
 
@@ -388,7 +387,7 @@ extern "C"
 	{
 		if (!initialized) return CASTER_NOT_INITIALIZED;
 
-		sample *s;
+		Sample *s;
 		unsigned int inst;
 		GET_SAMPLE(instance, &s, &inst);
 		
@@ -399,7 +398,7 @@ extern "C"
 	{
 		if (!initialized) return CASTER_NOT_INITIALIZED;
 
-		sample *s;
+		Sample *s;
 		unsigned int inst;
 		GET_SAMPLE(instance, &s, &inst);
 		
@@ -410,7 +409,7 @@ extern "C"
 	{
 		if (!initialized) return CASTER_NOT_INITIALIZED;
 
-		sample *s;
+		Sample *s;
 		unsigned int inst;
 		GET_SAMPLE(instance, &s, &inst);
 
@@ -427,16 +426,16 @@ extern "C"
 		if (instance == GM_ALL)
 		{
 			lot_iterator_t *iter = lot_iterator_create(handles);
-			sample *s;
+			Sample *s;
 
-			while ((s = (sample *)lot_next(iter, 0)) != 0)
+			while ((s = (Sample *)lot_next(iter, 0)) != 0)
 				s->set_volume((float)volume);
 
 			lot_iterator_destroy(iter);
 			return 0;
 		}
 
-		sample *s;
+		Sample *s;
 		unsigned int inst;
 		GET_SAMPLE(instance, &s, &inst);
 
@@ -457,16 +456,16 @@ extern "C"
 		if (instance == GM_ALL)
 		{
 			lot_iterator_t *iter = lot_iterator_create(handles);
-			sample *s;
+			Sample *s;
 
-			while ((s = (sample *)lot_next(iter, 0)) != 0)
+			while ((s = (Sample *)lot_next(iter, 0)) != 0)
 				s->set_pitch((float)pitch);
 
 			lot_iterator_destroy(iter);
 			return 0;
 		}
 
-		sample *s;
+		Sample *s;
 		unsigned int inst;
 		GET_SAMPLE(instance, &s, &inst);
 
@@ -487,16 +486,16 @@ extern "C"
 		if (instance == GM_ALL)
 		{
 			lot_iterator_t *iter = lot_iterator_create(handles);
-			sample *s;
+			Sample *s;
 
-			while ((s = (sample *)lot_next(iter, 0)) != 0)
+			while ((s = (Sample *)lot_next(iter, 0)) != 0)
 				s->set_panning((float)panning);
 
 			lot_iterator_destroy(iter);
 			return 0;
 		}
 
-		sample *s;
+		Sample *s;
 		unsigned int inst;
 		GET_SAMPLE(instance, &s, &inst);
 
