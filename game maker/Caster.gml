@@ -362,3 +362,55 @@ begin
         show_error("Handle not found.", false);
 end
 
+#define caster_length
+
+
+begin
+    var result;
+    result = _caster_length(argument0);
+    
+    if (result == CASTER_NOT_INITIALIZED)
+        show_error("Caster is not initialized.", true);
+    else if (result == CASTER_INVALID_HANDLE)
+        show_error("Invalid sample handle.", false);
+    else if (result == CASTER_HANDLE_NOT_FOUND)
+        show_error("Handle not found.", false);
+
+    return result;
+end
+
+#define caster_position
+
+
+begin
+    var result;
+    result = _caster_position(argument0);
+    
+    if (result == CASTER_NOT_INITIALIZED)
+        show_error("Caster is not initialized.", true);
+    else if (result == CASTER_INVALID_HANDLE)
+        show_error("Invalid sample handle.", false);
+    else if (result == CASTER_HANDLE_NOT_FOUND)
+        show_error("Handle not found.", false);
+
+    return result;
+end
+
+#define caster_seek
+
+
+begin
+    if (argument1 < 0 || argument1 > _caster_length(argument0))
+        show_error("Invalid track position.", false);
+    
+    var result;
+    result = _caster_seek(argument0, argument1);
+    
+    if (result == CASTER_NOT_INITIALIZED)
+        show_error("Caster is not initialized.", true);
+    else if (result == CASTER_INVALID_HANDLE)
+        show_error("Invalid sample handle.", false);
+    else if (result == CASTER_HANDLE_NOT_FOUND)
+        show_error("Handle not found.", false);
+end
+

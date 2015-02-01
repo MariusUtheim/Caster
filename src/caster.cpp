@@ -505,6 +505,58 @@ extern "C"
 			s->set_panning(inst - 1, (float)panning);
 		return 1;
 	}
+	
+	double caster_length(double instance)
+	{
+		if (!initialized) return CASTER_NOT_INITIALIZED;
+
+		Sample *s;
+		unsigned int inst;
+		GET_SAMPLE(instance, &s, &inst);
+
+		return s->get_length(inst == 0 ? 0 : inst - 1);
+	}
+	
+	double caster_position(double instance)
+	{
+		if (!initialized) return CASTER_NOT_INITIALIZED;
+
+		Sample *s;
+		unsigned int inst;
+		GET_SAMPLE(instance, &s, &inst);
+
+		return s->get_position(inst == 0 ? 0 : inst - 1);
+	}
+	
+	double caster_seek(double instance, double time)
+	{
+		if (!initialized) return CASTER_NOT_INITIALIZED;
+
+		if (instance == GM_NOONE)
+			return 1;
+		
+		if (instance == GM_ALL)
+		{
+			lot_iterator_t *iter = lot_iterator_create(handles);
+			Sample *s;
+
+			while ((s = (Sample *)lot_next(iter, 0)) != 0)
+				s->seek((float)time);
+
+			lot_iterator_destroy(iter);
+			return 0;
+		}
+		
+		Sample *s;
+		unsigned int inst;
+		GET_SAMPLE(instance, &s, &inst);
+
+		if (inst == 0)
+			s->seek((float)time);
+		else
+			s->seek(inst - 1, (float)time);
+		return 1;
+	}
 
 #ifdef __cplusplus
 } /* extern "C" */

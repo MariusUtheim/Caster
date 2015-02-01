@@ -345,3 +345,54 @@ float Sample::get_panning(unsigned int instance)
 
 	return asinf(x) / (float)M_PI_2;
 }
+
+float Sample::get_length(unsigned int instance)
+{
+	if (instance < sourcecount)
+	{
+		ALint bufferID, sizeInBytes, channels, bits, freq;
+		alGetSourcei(sources[instance], AL_BUFFER, &bufferID);
+		alGetBufferi(bufferID, AL_SIZE, &sizeInBytes);
+		alGetBufferi(bufferID, AL_CHANNELS, &channels);
+		alGetBufferi(bufferID, AL_BITS, &bits);
+		alGetBufferi(bufferID, AL_FREQUENCY, &freq);
+		//alSourcei(bufferID, AL_BUFFER, NULL);
+		return sizeInBytes / channels / (bits/8) / (float)freq;
+	}
+	else
+		return 0;
+	
+	/*
+	if (!is_playing(instance))
+		return 0;
+	ALint bufferID, sizeInBytes, channels, bits, freq;
+	alGetSourcei(sources[instance], AL_BUFFER, &bufferID); 
+	alGetBufferi(bufferID, AL_SIZE, &sizeInBytes);
+	alGetBufferi(bufferID, AL_CHANNELS, &channels);
+	alGetBufferi(bufferID, AL_BITS, &bits);
+	alGetBufferi(bufferID, AL_FREQUENCY, &freq);
+	alSourcei(bufferID, AL_BUFFER, NULL);
+	return sizeInBytes / channels / (bits/8) / (float)freq;
+	*/
+}
+
+float Sample::get_position(unsigned int instance) 
+{
+	if (!is_playing(instance))
+		return 0;
+	float offset = 0;
+	alGetSourcef(sources[instance], AL_SEC_OFFSET, &offset);
+	return offset;
+}
+
+void Sample::seek(double time)
+{
+	for (unsigned int i = 0; i < sourcecount; i++)
+		seek(i, time);
+}
+
+void Sample::seek(unsigned int instance, double time)
+{
+	if (is_playing(instance))
+		alSourcef(sources[instance], AL_SEC_OFFSET, (float)time);
+}

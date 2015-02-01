@@ -51,6 +51,9 @@ extern "C"
 	EXPORT double caster_set_pitch(double handle, double pitch);
 	EXPORT double caster_get_panning(double handle);
 	EXPORT double caster_set_panning(double handle, double panning);
+	EXPORT double caster_length(double handle);
+	EXPORT double caster_position(double handle);
+	EXPORT double caster_seek(double handle, double time);
 #ifdef __cplusplus
 }
 #endif
