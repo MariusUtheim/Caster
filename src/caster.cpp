@@ -514,7 +514,10 @@ extern "C"
 		unsigned int inst;
 		GET_SAMPLE(instance, &s, &inst);
 
-		return s->get_length(inst == 0 ? 0 : inst - 1);
+		if (inst == 0)
+			return s->get_duration();
+		else
+			return s->get_duration(inst - 1);
 	}
 	
 	double caster_position(double instance)

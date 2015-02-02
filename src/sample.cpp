@@ -346,22 +346,20 @@ float Sample::get_panning(unsigned int instance)
 	return asinf(x) / (float)M_PI_2;
 }
 
-float Sample::get_length(unsigned int instance)
+float Sample::get_duration()
 {
-	if (instance < sourcecount)
-	{
-		ALint bufferID, sizeInBytes, channels, bits, freq;
-		alGetSourcei(sources[instance], AL_BUFFER, &bufferID);
-		alGetBufferi(bufferID, AL_SIZE, &sizeInBytes);
-		alGetBufferi(bufferID, AL_CHANNELS, &channels);
-		alGetBufferi(bufferID, AL_BITS, &bits);
-		alGetBufferi(bufferID, AL_FREQUENCY, &freq);
-		//alSourcei(bufferID, AL_BUFFER, NULL);
-		return sizeInBytes / channels / (bits/8) / (float)freq;
-	}
-	else
-		return 0;
-	
+	ALint sizeInBytes, channels, bits, freq;
+	alGetBufferi(buffer, AL_SIZE, &sizeInBytes);
+	alGetBufferi(buffer, AL_CHANNELS, &channels);
+	alGetBufferi(buffer, AL_BITS, &bits);
+	alGetBufferi(buffer, AL_FREQUENCY, &freq);
+	return sizeInBytes / channels / (bits / 8) / (float)freq;
+
+}
+
+float Sample::get_duration(unsigned int instance)
+{
+	return get_duration() * get_pitch(instance);
 	/*
 	if (!is_playing(instance))
 		return 0;

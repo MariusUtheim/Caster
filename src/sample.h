@@ -44,7 +44,8 @@ public:
 
 	int is_playing();
 	int is_playing(unsigned int instance);
-	float get_length(unsigned int instance);
+	float get_duration();
+	float get_duration(unsigned int instance);
 	float get_position(unsigned int instance);
 	void seek(double time);
 	void seek(unsigned int instance, double time);
